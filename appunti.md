@@ -1,35 +1,41 @@
-# Sistemi operativi - esame pratico
-
 # Table of contents  
-- [Sistemi operativi - esame pratico](#sistemi-operativi---esame-pratico)
 - [Table of contents](#table-of-contents)
-  - [Premessa](#premessa)
-  - [Bash](#bash)
-    - [Hashbangs](#hashbangs)
-    - [Comandi basici](#comandi-basici)
-    - [File descriptors e redirezionamento](#file-descriptors-e-redirezionamento)
-    - [Variabili e array](#variabili-e-array)
-    - [Variabili d'ambiente](#variabili-dambiente)
-    - [Concatenazione comandi](#concatenazione-comandi)
-    - [Subshell](#subshell)
-    - [Espansione aritmetica](#espansione-aritmetica)
-    - [Confronti](#confronti)
-    - [Loops](#loops)
-  - [C](#c)
-    - [Librerie da includere](#librerie-da-includere)
-    - [Direttive particolari](#direttive-particolari)
-    - [Puntatori a funzione](#puntatori-a-funzione)
-    - [Funzioni utili](#funzioni-utili)
+- [Premessa](#premessa)
+- [Bash](#bash)
+  - [Hashbangs](#hashbangs)
+  - [Comandi basici](#comandi-basici)
+  - [File descriptors e redirezionamento](#file-descriptors-e-redirezionamento)
+  - [Variabili e array](#variabili-e-array)
+  - [Variabili d'ambiente](#variabili-dambiente)
+  - [Concatenazione comandi](#concatenazione-comandi)
+  - [Subshell](#subshell)
+  - [Espansione aritmetica](#espansione-aritmetica)
+  - [Confronti](#confronti)
+  - [Loops](#loops)
+- [Makefile](#makefile)
+  - [Target speciali](#target-speciali)
+  - [Funzioni speciali](#funzioni-speciali)
+  - [Makefile esempio](#makefile-esempio)
+- [C](#c)
+  - [Librerie da includere](#librerie-da-includere)
+  - [Direttive particolari](#direttive-particolari)
+  - [Puntatori a funzione](#puntatori-a-funzione)
+  - [Funzioni utili](#funzioni-utili)
+  - [Files](#files)
+    - [Streams](#streams)
+    - [Files Descriptors](#files-descriptors)
+    - [Duplicazione dei file descriptors](#duplicazione-dei-file-descriptors)
+  - [Forking e system calls](#forking-e-system-calls)
 ***
 <br>
 
-## Premessa  
+# Premessa  
 
-In questi appunti si trovano tutti gli strumenti per preparare e dare l'esame pratico di sistemi operativi. In aggiunta ci sarà del materiale proveniente dalle mie esperienze oppure dal manuale GNU che sarà complementare alle informazioni presenti sulle slide del corso \(che infatti sono incomplete\).<br><br>
+In questi appunti si trovano gli strumenti per preparare e dare l'esame pratico di sistemi operativi. In aggiunta ci sarà del materiale proveniente dalle mie esperienze oppure dal manuale GNU che sarà complementare alle informazioni presenti sulle slide del corso. Sottolineo che in questi appunti **verranno saltati i concetti più basilari** che ritengo prerequisiti, se si ha bisogno di quelli integrate con le slide su moodle.<br><br>
 
-## Bash  
+# Bash  
 
-### Hashbangs  
+## Hashbangs  
 
 Ogni script bash inizia con una riga di questo tipo che serve per far capire al terminale con quale shell deve eseguire lo script  
 ```Bash
@@ -37,7 +43,7 @@ Ogni script bash inizia con una riga di questo tipo che serve per far capire al 
 ```
 <br>
 
-### Comandi basici
+## Comandi basici
 
 ```Bash
     alias cmd='cmd2' # cmd diventa alias di cmd2
@@ -51,7 +57,7 @@ Ogni script bash inizia con una riga di questo tipo che serve per far capire al 
 ```
 <br>
 
-### File descriptors e redirezionamento
+## File descriptors e redirezionamento
 
 I 3 file descriptor di default su linux sono:
 - 1: **standard input**
@@ -70,7 +76,7 @@ Redirezionamenti speciali:
 - Mutare un flusso f: `f > /dev/null`
 <br><br>
 
-### Variabili e array
+## Variabili e array
 
 ```Bash
 a = 5 # dichiarazione variabile
@@ -91,7 +97,7 @@ $1,$2 ecc.. # parametri di input
 ```
 <br>
 
-### Variabili d'ambiente
+## Variabili d'ambiente
 
 In Linux esistono delle variabili d'ambiente, ossia variabili persistenti in ogni sessione, le principali:  
 
@@ -100,7 +106,7 @@ In Linux esistono delle variabili d'ambiente, ossia variabili persistenti in ogn
 - **$HOME**: indica la home directory
 - **$PS1**: indica come è fatto il layout della riga di terminale iniziale<br><br>
 
-### Concatenazione comandi
+## Concatenazione comandi
 
 - In sequenza: `cmd1 ; cmd2`
 - Solo se cmd1 ritorna 0: `cmd1 && cmd2`
@@ -108,7 +114,7 @@ In Linux esistono delle variabili d'ambiente, ossia variabili persistenti in ogn
 
 **NB:** In un file di script ricordo che ogni linea esegue un comando bash nello stesso terminale ( a differenza del [**Makefile**](#makefile) ). Se invece si vogliono eseguire sulla stessa riga bisogna usare la concatenazione.<br><br>
 
-### Subshell
+## Subshell
 
 ```Bash
 a = $(echo "prova") # esegue il comando in una subshell e cattura SOLO lo standard output
@@ -116,7 +122,7 @@ a = $(echo "prova") # esegue il comando in una subshell e cattura SOLO lo standa
 ```
 <br>
 
-### Espansione aritmetica
+## Espansione aritmetica
 
 ```Bash
 a = 1
@@ -126,7 +132,7 @@ a = 1
 ```
 <br>
 
-### Confronti
+## Confronti
 
 ```Bash
 # sintassi POSIX standard (funziona sempre):
@@ -147,7 +153,7 @@ fi;
 ```
 <br>
 
-### Loops
+## Loops
 ```Bash
 for i in ${!lista[@]}; do
     echo ${lista[$i]}
@@ -165,9 +171,60 @@ done
 ```
 <br><br>
 
-## C
+# Makefile
 
-### Librerie da includere
+I makefile sono costituiti da **target** ognuno dei quali ha dei **prerequisiti**. Invocando `make` viene eseguito il **primo target** del makefile e in caso abbia prerequisiti verranno risolti eseguendo i relativi target. Ogni target contiene una **ricetta**, ossia un insieme di istruzioni,su ogni riga **precedute da un tab**. Per ogni riga vengono eseguiti comandi SH e non BASH, perciò **la sintassi di bash non funzionerà**. **Ogni riga esegue i comandi su un nuovo terminale**, perciò se si vuole eseguire una sequenza atomica di comandi, bisognerà farlo sulla stessa riga concatenando i comandi ( `&&` oppure `;` ) oppure andando a capo usando \ per fare l'escape.<br><br>
+
+Normalmente invocando `make` viene cercato un file di nome `Makefile` o `makefile`, se si vuole dare un nome diverso allora occorrerà invocare `make -f makefilealternativo`<br>
+
+Le variabili in un Makefile si definiscono così: `A=1` oppure `A:=1` e si richiamano con `$(A)`<br>
+
+Per eseguire un determinato target del Makefile: `make target`<br>
+
+Per rappresentare una stringa qualsiasi in un target usare `%`. ES: ogni file con estensione `.c` si può rappresentare con `%.c`<br>
+
+Per silenziare un particolare comando, apporre `@` all'inizio di esso.<br>
+
+## Target speciali
+
+- `.SILENT` : i target specificati come prerequisito non stamperanno nulla su stderr e stdout
+
+## Funzioni speciali
+
+- `$(eval ...)` : consente di creare nuove regole make dinamiche. ES: `$(eval VAR+=aggiunta)` concatena aggiunta a var.
+- `$(shell ...)` : cattura l’output di un commando shell. ES: `PWD=$(shell pwd)`.
+- `$(wildcard *)` : restituisce un elenco di file che corrispondono alla stringa specificata. ES: `OBJ_FILES:=$(wildcard *.o)`
+<br><br>
+
+## Makefile esempio  
+
+In realtà non è altro che la mia soluzione dell'esame del 15-06-2022.
+
+```Makefile
+DEST=./
+
+main:
+	if [ -e $(DEST) ]; then \
+		cd $(DEST); \
+		gcc main.c -std=gnu90 -o coda; \
+	else \
+		echo "?ERROR" >&2; \
+	fi;
+
+cexp:
+	gcc prove.c -std=gnu90 -o prove;
+
+exp: cexp
+	./prove
+
+.SILENT:
+```
+
+
+
+# C
+
+## Librerie da includere
 
 ```C
 #include <stdio.h>
@@ -184,7 +241,7 @@ done
 ```
 <br>
 
-### Direttive particolari
+## Direttive particolari
 
 ```C
 #define F(A,B) A*B
@@ -194,7 +251,7 @@ done
 ```
 <br>
 
-### Puntatori a funzione
+## Puntatori a funzione
 
 ```C
 return_type (*fn_pointer) (type_arg1, type_arg2); // Definizione di un puntatore a funzione fn_pointer
@@ -212,10 +269,133 @@ int result = (*fn_pointer)(1,2);
 ```
 <br>
 
-### Funzioni utili
+## Funzioni utili
 
 ```C
 sprintf(dest, "format", src1,src2.. ); // stampa dentro dest (sovrascrivendolo) usando il formato specificato
 char* token = strtok(buffer, delimiter_str); // tokenizza il buffer separandolo in base a delimiter(stringa). Viene rimosso il delimitatore dal token e la stringa originale viene modificata irreversibilmente
 char* token = strtok(NULL,delimiter_str); // continua a tokenizzare
 ```
+<br>
+
+## Files  
+***
+<br>
+
+### Streams
+
+```C
+// Dichiariamo uno stream
+FILE* f = fopen("path_to_file","flags");
+
+/* 
+flags can be:
+    ● r: read
+    ● w: write or overwrite (create)
+    ● r+: read and write (update existing)
+    ● w+: read and write. (truncate if exists or create)
+    ● a: write at end (update)
+    ● a+: read and write at end (create)
+*/
+
+// Read from stream
+int a;
+char str[10];
+fscanf(f,"%d %s", &a, str); // NB: la fscanf vuole le aree di memoria delle variabili infatti uso &a per ottenere l'indirizzo dell'intero, mentre la stringa è un indirizzo di memoria di per sé.
+
+// Print to stream
+fprintf(f,"intero: %d stringa: %s", a, str);
+
+// gets string reading maximum dim_buffer-1 from stream
+fgets(buffer,dim_buffer,f);
+
+// gets character from stream
+fgetc(character,f);
+
+// gets line from stream
+int characters_read = getline(&line, &dim_line, f);
+
+// tells if stream is ended
+feof(f);
+
+// close stream
+fclose(f);
+```
+<br>
+
+### Files Descriptors
+
+```C
+// Open a file descriptor
+int f = open("filename", flags, mode);
+/*
+Flags can be ( per unirli usare | ):
+    ● Deve contenere uno tra O_RDONLY, O_WRONLY, o O_RDWR
+    ● O_CREAT: crea il file se non esistente
+    ● O_APPEND: apri il file in append mode
+    ● O_TRUNC: cancella il contenuto del file (se aperto con W)
+    ● O_EXCL: se usata con O_CREAT, fallisce se il file esiste già
+
+Mode ( opzionale ) specifica i permessi da dare al file ( fare man open per vederli tutti, oppure 0777 per darli tutti ).
+*/
+
+// Read from file descripotr
+int bytesRead = read(f,buffer,bytes_to_read);
+
+// Create a file
+int esito = creat(path_to_file, mode); // se va male ritorna -1
+
+// Move the pointer in the stream counting from whence
+lseek(f, offset_bytes, whence);
+
+/*
+Whence can be:
+    ● SEEK_SET = da inizio file,
+    ● SEEK_CUR = dalla posizione corrente
+    ● SEEK_END = dalla fine del file.
+*/
+
+// Close file descriptor
+close(f);
+```
+
+**NB:** gli stream principali sono **stdin**,**stderr**,**stdout** ; i loro file descriptor si ricavano chiamando **fileno(stream)** oppure usando le costanti **STDIN_FILENO**, **STDERR_FILENO**, **STDOUT_FILENO**.
+<br><br>
+
+### Duplicazione dei file descriptors
+
+```C
+// The dup() system call creates a copy of the file descriptor oldfd, using the lowest-numbered unused file descriptor for the new descriptor.
+int f = dup(oldfd);
+
+//The dup2() system call performs the same task as dup(), but instead of using the lowest-numbered unused file descriptor, it  uses  the  file  descriptor number specified in newfd.  If the file descriptor newfd was previously open, it is silently closed before being reused.
+int f = dup2(int oldfd, int newfd);
+```
+<br>
+
+## Forking e system calls
+
+```C
+/*
+Queste chiamate sostituiscono il nostro programma eseguendo il programma specificato:
+    - path: full path to file
+    - file: filename considering the folder or $PATH
+    - argv: pgm arguments (NULL terminated)
+    - env: variables to pass. eg: "A=3,B=prova"
+*/
+int execv(const char *path, char *const argv[]);
+int execvp(const char *file, char *const argv[]);
+int execvpe(const char *file, char *const argv[],char *const envp[]);
+int execl(const char *path, const char * arg0, ...,argn,NULL);
+int execlp(const char *file, const char * arg0, ...,argn,NULL);
+int execle(const char *file, const char * arg0, ...,argn,
+NULL, char *const envp[]);
+int execve(const char *filename, char *const argv[], char
+*const envp[]);
+
+
+//Executes a command in an SH shell ( BASH SINTAX DOES NOT WORK ! )
+int system(const char * string)
+```
+<br>
+
