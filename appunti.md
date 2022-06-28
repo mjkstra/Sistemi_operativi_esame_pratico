@@ -34,6 +34,7 @@
     - [Pipe anonime](#pipe-anonime)
     - [Pipe named](#pipe-named)
   - [Message Queues](#message-queues)
+  - [Threads](#threads)
 ***
 <br>
 
@@ -543,3 +544,101 @@ int mkfifo(const char *pathname, mode_t mode); // crea una pipe(file) con nome ,
 <br>
 
 ## Message Queues
+
+```C
+int creat(const char *pathname, mode_t mode); // to create the file for the ftok
+
+key_t ftok(const char *pathname, int proj_id); // to create the key to get and make the queue
+
+int msgget(key_t key, int msgflg); 
+/*
+Crea o ottiene l'id della coda.
+msgflag: 0777 ( da mettere per ottenere tutti i permessi sulla coda ), IPC_CREAT (crea se non esiste), IPC_EXCL(fallisce se la coda esiste).
+Fallisce con -1.
+*/
+
+
+// Per inviare messaggi posso definire una struttura ad hoc e usare mtype per definire il tipo di messaggio che andrà nella coda
+struct msg_buffer{
+    long mtype;
+    char mtext[100];
+} message;
+
+int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
+// flag: IPC_NOWAIT( la chiamata fallisce in assenza di spazio)
+
+// Per ricevere messaggi 
+ssize_t msgrcv(int msqid,void *msgp,size_t msgsz,long msgtyp,int msgflg)
+// flag: IPC_NOWAIT ( fallisce se non ci sono messaggi ), MSG_NOERROR ( tronca il messaggio se è più grande del buffer, in assenza fallirebbe )
+
+/*
+A seconda di msgtyp viene recuperato il messaggio:
+    ● msgtyp = 0: primo messaggio della coda (FIFO)
+    ● msgtyp > 0: primo messaggio di tipo msgtyp, o primo messaggio di tipo
+    diverso da msgtyp se MSG_EXCEPT è impostato come flag
+    ● msgtyp < 0: primo messaggio il cui tipo T è min(T ≤ |msgtyp|)
+*/
+
+int msgctl(int msqid, int cmd, struct msqid_ds *buf);
+/*
+Modifica la coda identificata da msqid secondo i comandi cmd, riempiendo buf con informazioni sulla coda (ad esempio tempo di ultima scrittura, di ultima lettura,numero messaggi nella coda, etc...). Valori di cmd possono essere:
+● IPC_STAT: recupera informazioni da kernel
+● IPC_SET: imposta alcuni parametri a seconda di buf
+● IPC_RMID: rimuove immediatamente la coda
+● IPC_INFO: recupera informazioni generali sui limiti delle code nel sistema
+● MSG_INFO: come IPC_INFO ma con informazioni differenti
+● MSG_STAT: come IPC_STAT ma con informazioni differenti
+*/
+
+struct msqid_ds {
+    struct ipc_perm msg_perm; /* Ownership and permissions */
+    time_t msg_stime; /* Time of last msgsnd(2) */
+    time_t msg_rtime; /* Time of last msgrcv(2) */
+    time_t msg_ctime; //Time of creation or last modification by msgctl
+    unsigned long msg_cbytes; /* # of bytes in queue */
+    msgqnum_t msg_qnum; /* # of messages in queue */
+    msglen_t msg_qbytes; /* Maximum # of bytes in queue */
+    pid_t msg_lspid; /* PID of last msgsnd(2) */
+    pid_t msg_lrpid; /* PID of last msgrcv(2) */
+};
+
+struct ipc_perm {
+    key_t __key; /* Key supplied to msgget(2) */
+    uid_t uid; /* Effective UID of owner */
+    gid_t gid; /* Effective GID of owner */
+    uid_t cuid; /* Effective UID of creator */
+    gid_t cgid; /* Effective GID of creator */
+    unsigned short mode; /* Permissions */
+    unsigned short __seq; /* Sequence number */
+};
+```
+<br>
+
+## Threads
+
+```C
+int pthread_create(
+    pthread_t *restrict thread, /* Thread ID */
+    const pthread_attr_t *restrict attr, /* Attributes */
+    void *(*start_routine)(void *), /* Function to be executed */
+    void *restrict arg /* Parameters to above function */
+);
+
+int pthread_cancel(pthread_t thread); // Invia una richiesta di cancellazione
+
+int pthread_setcancelstate(int state, int *oldstate);
+// con state = PTHREAD_CANCEL_DISABLE o PTHREAD_CANCEL_ENABLE ( abilita o disabilita la possibilità di essere cancellati)
+int pthread_setcanceltype(int type, int *oldtype);
+// con type = PTHREAD_CANCEL_DEFERRED( attende un cancellation point ) o PTHREAD_CANCEL_ASYNCHRONOUS ( cancellabile in qualsiasi momento )
+
+int pthread_join(pthread_t thread, void **retval); // attende un thread joinabile
+
+int pthread_attr_setxxxx(pthread_attr_t *attr, params); // setta un certo parametro del thread
+int pthread_attr_getxxxx(const pthread_attr_t *attr, params); // ottiene un certo parametro del thread
+
+/*
+I più importanti sono er la set/get_detachstate per valutare se un thread è joinabile:
+    - PTHREAD_CREATE_DETACHED: non può essere aspettato
+    - PTHREAD_CREATE_JOINABLE: default, può essere aspettato
+*/
+```
