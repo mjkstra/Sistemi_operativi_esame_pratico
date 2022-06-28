@@ -26,6 +26,14 @@
     - [Files Descriptors](#files-descriptors)
     - [Duplicazione dei file descriptors](#duplicazione-dei-file-descriptors)
   - [Forking e system calls](#forking-e-system-calls)
+    - [Exec](#exec)
+    - [Forking](#forking)
+    - [Segnali](#segnali)
+  - [Errors in C](#errors-in-c)
+  - [Pipes](#pipes)
+    - [Pipe anonime](#pipe-anonime)
+    - [Pipe named](#pipe-named)
+  - [Message Queues](#message-queues)
 ***
 <br>
 
@@ -279,8 +287,6 @@ char* token = strtok(NULL,delimiter_str); // continua a tokenizzare
 <br>
 
 ## Files  
-***
-<br>
 
 ### Streams
 
@@ -339,7 +345,7 @@ Flags can be ( per unirli usare | ):
 Mode ( opzionale ) specifica i permessi da dare al file ( fare man open per vederli tutti, oppure 0777 per darli tutti ).
 */
 
-// Read from file descripotr
+// Read from file descriptor (remember to add '\0' to strings)
 int bytesRead = read(f,buffer,bytes_to_read);
 
 // Create a file
@@ -375,6 +381,8 @@ int f = dup2(int oldfd, int newfd);
 
 ## Forking e system calls
 
+### Exec
+
 ```C
 /*
 Queste chiamate sostituiscono il nostro programma eseguendo il programma specificato:
@@ -393,9 +401,145 @@ NULL, char *const envp[]);
 int execve(const char *filename, char *const argv[], char
 *const envp[]);
 
-
 //Executes a command in an SH shell ( BASH SINTAX DOES NOT WORK ! )
-int system(const char * string)
+int system(const char * string);
 ```
 <br>
 
+### Forking
+
+```C
+int pid = fork(); // il padre ottiene il pid del figlio mentre il figlio ottiene 0. -1 in caso di errore
+pid_t getpid(); // restituisce il PID del processo attivo
+pid_t getppid(); // restituisce il PID del processo padre
+
+pid_t wait (int *status); //attende la conclusione di UN figlio e ne restituisce il PID riportando lo status nel puntatore passato come argomento se non NULL
+
+pid_t waitpid(pid_t pid, int *status, int options) 
+/* 
+analoga a wait ma consente di passare delle opzioni e si può specificare come pid:
+    ● -n (<-1: attende un qualunque figlio il cui “gruppo” è |-n|)
+    ● -1 (attende un figlio qualunque)
+    ● 0 (attende un figlio con lo stesso “gruppo” del padre)
+    ● n (n>0: attende il figlio il cui pid è esattamente n)
+*/
+
+/*
+Lo stato di ritorno è un numero che comprende più valori “composti” interpretabili con apposite macro, utilizzabili come funzione (altre come valore) passando lo “stato” ricevuto come risposta
+*/
+
+WEXITSTATUS(sts); // restituisce lo stato vero e proprio (ad esempio il valore usato nella “exit”)
+WIFCONTINUED(sts); // true se il figlio ha ricevuto un segnale SIGCONT
+WIFEXITED(sts); // true se il figlio è terminato normalmente
+WIFSIGNALED(sts); // true se il figlio è terminato a causa di un segnale non gestito
+WIFSTOPPED(sts); // true se il figlio è attualmente in stato di “stop”
+WSTOPSIG(sts); // numero del segnale che ha causato lo “stop” del figlio
+WTERMSIG(sts); // numero del segnale che ha causato la terminazione del figlio
+```
+
+### Segnali
+
+Su linux sono 32, ecco i principali:
+
+- SIGALRM (alarm clock)
+- SIGCHLD (child terminated)
+- SIGCONT (continue, if stopped)
+- SIGINT (terminal interrupt, CTRL + C)
+- SIGKILL (kill process)
+- SIGQUIT (terminal quit)
+- SIGSTOP (stop)
+- SIGTERM (termination)
+- SIGUSR1 (user signal)
+- SIGUSR2 (user signal)
+
+```C
+
+sighandler_t signal(int signum, sighandler_t handler); 
+/* specifica come gestire un segnale. Con handler = SIG_IGN ignora il segnale, con SIG_DFL usa quello di default. Signal funziona per un singolo segnale inviato, poi viene ripristinato il comportamento di default
+*/
+
+void myHandler(int sigNum){ ... } // Handler personalizzato
+
+
+int kill(pid_t pid, int sig);
+/*
+Invia un segnale ad uno o più processi a seconda dell’argomento pid:
+    ● pid > 0: segnale al processo con PID=pid
+    ● pid = 0: segnale ad ogni processo dello stesso gruppo di chi esegue “kill”
+    ● pid = -1: segnale ad ogni processo possibile (stesso UID/RUID)
+    ● pid < -1: segnale ad ogni processo del gruppo |pid|
+*/
+
+
+sigset_t mod,old;
+int sigemptyset(sigset_t *set); // Svuota
+int sigfillset(sigset_t *set); // Riempie
+int sigaddset(sigset_t *set, int signo); // Aggiunge singolo
+int sigdelset(sigset_t *set, int signo); // Rimuove singolo
+int sigismember(const sigset_t *set, int signo); // Interpella
+int sigprocmask(int how, const sigset_t *restrict set,sigset_t *restrict oldset); // Update the current mask with the signals in ‘mod’
+
+/* 
+A seconda del valore di how e di set, la maschera dei segnali del processo viene cambiata. Nello specifico:
+    ● how = SIG_BLOCK: i segnali in set sono aggiunti alla maschera;
+    ● how = SIG_UNBLOCK: i segnali in set sono rimossi dalla maschera;
+    ● how = SIG_SETMASK: set diventa la maschera.
+Se oldset non è nullo, in esso verrà salvata la vecchia maschera (anche se set è nullo).
+*/
+
+int sigpending(sigset_t *set); // Riempie il set con i segnali pending
+
+// Per gestire i segnali in maniera sofisticata.
+
+struct sigaction {
+    void (*sa_handler)(int); // handler semplice
+    void (*sa_sigaction)(int, siginfo_t *, void *); // handler complesso con parametri aggiuntivi. Con info->si_pid si ottiene il pid del mandante
+    sigset_t sa_mask; //Signals blocked during handler
+    int sa_flags; 
+    /* modify behaviour of signal:
+        - SA_SIGINFO ( utilizza l'handler complesso sa_sigaction )
+        - SA_RESETHAND (resetta l'handler di default dopo un primo handling)
+    */
+    void (*sa_restorer)(void); //Deprecated, not POSIX
+};
+
+//Applica la sigaction
+int sigaction(int signum, const struct sigaction *restrict act, struct sigaction *restrict oldact);
+```
+<br>
+
+## Errors in C
+
+```C
+export int errno; // dichiaro la variabile errno come esterna essa contiene l'ultimo codice di errore
+strerror(errno); // da un messaggio verboso sull'errore
+```
+
+## Pipes  
+
+### Pipe anonime
+
+```C
+int fd[2];
+pipe(fd); // ritorna 0 se tutto ok
+
+// lettura da pipe bloccante se non c'è niente a meno che la write sia stata chiusa, restituisce il numero di byte letti
+int read(int fd[0],char * data, int num);
+
+// scrittura su pipe
+int write(int fd[1],char * data, int num);
+
+// si chiude sempre la parte che non ci interessa per evitare che la read sia bloccante all'infinito.
+```
+<br>
+
+### Pipe named
+
+```C
+int mkfifo(const char *pathname, mode_t mode); // crea una pipe(file) con nome , ritorna -1 se da errore altrimenti 0
+
+// Per usare la coda entrambi i processi devono averla aperta contemporaneamente usando la open con il nome del file che è la pipe
+```
+<br>
+
+## Message Queues
