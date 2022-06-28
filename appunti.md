@@ -246,6 +246,7 @@ exp: cexp
 #include <sys/msg.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <pthread.h>
 #include <signal.h>
 ```
 <br>
@@ -297,12 +298,12 @@ FILE* f = fopen("path_to_file","flags");
 
 /* 
 flags can be:
-    ● r: read
-    ● w: write or overwrite (create)
-    ● r+: read and write (update existing)
-    ● w+: read and write. (truncate if exists or create)
-    ● a: write at end (update)
-    ● a+: read and write at end (create)
+    - r: read
+    - w: write or overwrite (create)
+    - r+: read and write (update existing)
+    - w+: read and write. (truncate if exists or create)
+    - a: write at end (update)
+    - a+: read and write at end (create)
 */
 
 // Read from stream
@@ -337,11 +338,11 @@ fclose(f);
 int f = open("filename", flags, mode);
 /*
 Flags can be ( per unirli usare | ):
-    ● Deve contenere uno tra O_RDONLY, O_WRONLY, o O_RDWR
-    ● O_CREAT: crea il file se non esistente
-    ● O_APPEND: apri il file in append mode
-    ● O_TRUNC: cancella il contenuto del file (se aperto con W)
-    ● O_EXCL: se usata con O_CREAT, fallisce se il file esiste già
+    - Deve contenere uno tra O_RDONLY, O_WRONLY, o O_RDWR
+    - O_CREAT: crea il file se non esistente
+    - O_APPEND: apri il file in append mode
+    - O_TRUNC: cancella il contenuto del file (se aperto con W)
+    - O_EXCL: se usata con O_CREAT, fallisce se il file esiste già
 
 Mode ( opzionale ) specifica i permessi da dare al file ( fare man open per vederli tutti, oppure 0777 per darli tutti ).
 */
@@ -357,9 +358,9 @@ lseek(f, offset_bytes, whence);
 
 /*
 Whence can be:
-    ● SEEK_SET = da inizio file,
-    ● SEEK_CUR = dalla posizione corrente
-    ● SEEK_END = dalla fine del file.
+    - SEEK_SET = da inizio file,
+    - SEEK_CUR = dalla posizione corrente
+    - SEEK_END = dalla fine del file.
 */
 
 // Close file descriptor
@@ -419,10 +420,10 @@ pid_t wait (int *status); //attende la conclusione di UN figlio e ne restituisce
 pid_t waitpid(pid_t pid, int *status, int options) 
 /* 
 analoga a wait ma consente di passare delle opzioni e si può specificare come pid:
-    ● -n (<-1: attende un qualunque figlio il cui “gruppo” è |-n|)
-    ● -1 (attende un figlio qualunque)
-    ● 0 (attende un figlio con lo stesso “gruppo” del padre)
-    ● n (n>0: attende il figlio il cui pid è esattamente n)
+    - -n (<-1: attende un qualunque figlio il cui “gruppo” è |-n|)
+    - -1 (attende un figlio qualunque)
+    - 0 (attende un figlio con lo stesso “gruppo” del padre)
+    - n (n>0: attende il figlio il cui pid è esattamente n)
 */
 
 /*
@@ -465,10 +466,10 @@ void myHandler(int sigNum){ ... } // Handler personalizzato
 int kill(pid_t pid, int sig);
 /*
 Invia un segnale ad uno o più processi a seconda dell’argomento pid:
-    ● pid > 0: segnale al processo con PID=pid
-    ● pid = 0: segnale ad ogni processo dello stesso gruppo di chi esegue “kill”
-    ● pid = -1: segnale ad ogni processo possibile (stesso UID/RUID)
-    ● pid < -1: segnale ad ogni processo del gruppo |pid|
+    - pid > 0: segnale al processo con PID=pid
+    - pid = 0: segnale ad ogni processo dello stesso gruppo di chi esegue “kill”
+    - pid = -1: segnale ad ogni processo possibile (stesso UID/RUID)
+    - pid < -1: segnale ad ogni processo del gruppo |pid|
 */
 
 
@@ -482,9 +483,9 @@ int sigprocmask(int how, const sigset_t *restrict set,sigset_t *restrict oldset)
 
 /* 
 A seconda del valore di how e di set, la maschera dei segnali del processo viene cambiata. Nello specifico:
-    ● how = SIG_BLOCK: i segnali in set sono aggiunti alla maschera;
-    ● how = SIG_UNBLOCK: i segnali in set sono rimossi dalla maschera;
-    ● how = SIG_SETMASK: set diventa la maschera.
+    - how = SIG_BLOCK: i segnali in set sono aggiunti alla maschera;
+    - how = SIG_UNBLOCK: i segnali in set sono rimossi dalla maschera;
+    - how = SIG_SETMASK: set diventa la maschera.
 Se oldset non è nullo, in esso verrà salvata la vecchia maschera (anche se set è nullo).
 */
 
@@ -573,21 +574,21 @@ ssize_t msgrcv(int msqid,void *msgp,size_t msgsz,long msgtyp,int msgflg)
 
 /*
 A seconda di msgtyp viene recuperato il messaggio:
-    ● msgtyp = 0: primo messaggio della coda (FIFO)
-    ● msgtyp > 0: primo messaggio di tipo msgtyp, o primo messaggio di tipo
+    - msgtyp = 0: primo messaggio della coda (FIFO)
+    - msgtyp > 0: primo messaggio di tipo msgtyp, o primo messaggio di tipo
     diverso da msgtyp se MSG_EXCEPT è impostato come flag
-    ● msgtyp < 0: primo messaggio il cui tipo T è min(T ≤ |msgtyp|)
+    - msgtyp < 0: primo messaggio il cui tipo T è min(T <= |msgtyp|)
 */
 
 int msgctl(int msqid, int cmd, struct msqid_ds *buf);
 /*
 Modifica la coda identificata da msqid secondo i comandi cmd, riempiendo buf con informazioni sulla coda (ad esempio tempo di ultima scrittura, di ultima lettura,numero messaggi nella coda, etc...). Valori di cmd possono essere:
-● IPC_STAT: recupera informazioni da kernel
-● IPC_SET: imposta alcuni parametri a seconda di buf
-● IPC_RMID: rimuove immediatamente la coda
-● IPC_INFO: recupera informazioni generali sui limiti delle code nel sistema
-● MSG_INFO: come IPC_INFO ma con informazioni differenti
-● MSG_STAT: come IPC_STAT ma con informazioni differenti
+- IPC_STAT: recupera informazioni da kernel
+- IPC_SET: imposta alcuni parametri a seconda di buf
+- IPC_RMID: rimuove immediatamente la coda
+- IPC_INFO: recupera informazioni generali sui limiti delle code nel sistema
+- MSG_INFO: come IPC_INFO ma con informazioni differenti
+- MSG_STAT: come IPC_STAT ma con informazioni differenti
 */
 
 struct msqid_ds {
