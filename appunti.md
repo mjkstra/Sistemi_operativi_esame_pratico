@@ -248,6 +248,7 @@ exp: cexp
 #include <time.h>
 #include <pthread.h>
 #include <signal.h>
+#include <sys/stat.h>
 ```
 <br>
 
