@@ -118,7 +118,7 @@ In Linux esistono delle variabili d'ambiente, ossia variabili persistenti in ogn
 ## Concatenazione comandi
 
 - In sequenza: `cmd1 ; cmd2`
-- Solo se cmd1 ritorna 0: `cmd1 && cmd2`
+- Esegue cmd2 se solo se cmd1 ritorna 0: `cmd1 && cmd2`
 - Se cmd1 ritorna 1 ignora cmd2 (**lazy evaluation**): `cmd1 || cmd2`
 
 **NB:** In un file di script ricordo che ogni linea esegue un comando bash nello stesso terminale ( a differenza del [**Makefile**](#makefile) ). Se invece si vogliono eseguire sulla stessa riga bisogna usare la concatenazione.<br><br>
@@ -265,7 +265,8 @@ exp: cexp
 ## Puntatori a funzione
 
 ```C
-return_type (*fn_pointer) (type_arg1, type_arg2); // Definizione di un puntatore a funzione fn_pointer
+// Definizione di un puntatore a funzione fn_pointer
+return_type (*fn_pointer) (type_arg1, type_arg2); 
 
 // Esempio
 int (*fn_pointer) (int,int); // esempio
@@ -283,8 +284,12 @@ int result = (*fn_pointer)(1,2);
 ## Funzioni utili
 
 ```C
-sprintf(dest, "format", src1,src2.. ); // stampa dentro dest (sovrascrivendolo) usando il formato specificato
-char* token = strtok(buffer, delimiter_str); // tokenizza il buffer separandolo in base a delimiter(stringa). Viene rimosso il delimitatore dal token e la stringa originale viene modificata irreversibilmente
+// stampa dentro dest (sovrascrivendolo) usando il formato specificato
+sprintf(dest, "format", src1,src2.. );
+/* Tokenizza il buffer separandolo in base a delimiter(stringa).
+Viene rimosso il delimitatore dal token e la stringa originale
+viene modificata irreversibilmente */
+char* token = strtok(buffer, delimiter_str); 
 char* token = strtok(NULL,delimiter_str); // continua a tokenizzare
 ```
 <br>
@@ -310,7 +315,11 @@ flags can be:
 // Read from stream
 int a;
 char str[10];
-fscanf(f,"%d %s", &a, str); // NB: la fscanf vuole le aree di memoria delle variabili infatti uso &a per ottenere l'indirizzo dell'intero, mentre la stringa è un indirizzo di memoria di per sé.
+/* NB: la fscanf vuole le aree di memoria delle variabili,
+infatti uso &a per ottenere l'indirizzo dell'intero, 
+mentre la stringa è un indirizzo di memoria di per sé.
+*/
+fscanf(f,"%d %s", &a, str); 
 
 // Print to stream
 fprintf(f,"intero: %d stringa: %s", a, str);
@@ -345,7 +354,8 @@ Flags can be ( per unirli usare | ):
     - O_TRUNC: cancella il contenuto del file (se aperto con W)
     - O_EXCL: se usata con O_CREAT, fallisce se il file esiste già
 
-Mode ( opzionale ) specifica i permessi da dare al file ( fare man open per vederli tutti, oppure 0777 per darli tutti ).
+Mode ( opzionale ) specifica i permessi da dare al file 
+( fare man open per vederli tutti, oppure 0777 per darli tutti ).
 */
 
 // Read from file descriptor (remember to add '\0' to strings)
@@ -374,10 +384,14 @@ close(f);
 ### Duplicazione dei file descriptors
 
 ```C
-// The dup() system call creates a copy of the file descriptor oldfd, using the lowest-numbered unused file descriptor for the new descriptor.
+/* The dup() system call creates a copy of the file descriptor oldfd,
+using the lowest-numbered unused file descriptor for the new descriptor. */
 int f = dup(oldfd);
 
-//The dup2() system call performs the same task as dup(), but instead of using the lowest-numbered unused file descriptor, it  uses  the  file  descriptor number specified in newfd.  If the file descriptor newfd was previously open, it is silently closed before being reused.
+/* The dup2() system call performs the same task as dup(), but instead of 
+using the lowest-numbered unused file descriptor,it uses the file
+descriptor number specified in newfd. If the file descriptor newfd was
+previously open, it is silently closed before being reused. */
 int f = dup2(int oldfd, int newfd);
 ```
 <br>
@@ -412,11 +426,15 @@ int system(const char * string);
 ### Forking
 
 ```C
-int pid = fork(); // il padre ottiene il pid del figlio mentre il figlio ottiene 0. -1 in caso di errore
+/* Il padre ottiene il pid del figlio mentre il figlio ottiene 0.
+-1 in caso di errore */
+int pid = fork(); 
 pid_t getpid(); // restituisce il PID del processo attivo
 pid_t getppid(); // restituisce il PID del processo padre
 
-pid_t wait (int *status); //attende la conclusione di UN figlio e ne restituisce il PID riportando lo status nel puntatore passato come argomento se non NULL
+/* Attende la conclusione di UN figlio e ne restituisce il PID,
+riportando lo status nel puntatore passato come argomento se non NULL */
+pid_t wait (int *status); 
 
 pid_t waitpid(pid_t pid, int *status, int options) 
 /* 
@@ -425,13 +443,14 @@ analoga a wait ma consente di passare delle opzioni e si può specificare come p
     - -1 (attende un figlio qualunque)
     - 0 (attende un figlio con lo stesso “gruppo” del padre)
     - n (n>0: attende il figlio il cui pid è esattamente n)
+
+Lo stato di ritorno è un numero che comprende più valori “composti”,
+interpretabili con apposite macro utilizzabili come funzione, (altre come
+valore) passando lo “stato” ricevuto come risposta
 */
 
-/*
-Lo stato di ritorno è un numero che comprende più valori “composti” interpretabili con apposite macro, utilizzabili come funzione (altre come valore) passando lo “stato” ricevuto come risposta
-*/
-
-WEXITSTATUS(sts); // restituisce lo stato vero e proprio (ad esempio il valore usato nella “exit”)
+// restituisce lo stato vero e proprio (ad esempio il valore usato nella “exit”)
+WEXITSTATUS(sts); 
 WIFCONTINUED(sts); // true se il figlio ha ricevuto un segnale SIGCONT
 WIFEXITED(sts); // true se il figlio è terminato normalmente
 WIFSIGNALED(sts); // true se il figlio è terminato a causa di un segnale non gestito
@@ -456,10 +475,12 @@ Su linux sono 32, ecco i principali:
 - SIGUSR2 (user signal)
 
 ```C
-
-sighandler_t signal(int signum, sighandler_t handler); 
-/* specifica come gestire un segnale. Con handler = SIG_IGN ignora il segnale, con SIG_DFL usa quello di default. Signal funziona per un singolo segnale inviato, poi viene ripristinato il comportamento di default
+/* Specifica come gestire un segnale. Con handler = SIG_IGN ignora il
+segnale, con SIG_DFL usa quello di default. Signal funziona per un singolo
+segnale inviato, poi viene ripristinato il comportamento di default
 */
+sighandler_t signal(int signum, sighandler_t handler); 
+
 
 void myHandler(int sigNum){ ... } // Handler personalizzato
 
@@ -480,10 +501,12 @@ int sigfillset(sigset_t *set); // Riempie
 int sigaddset(sigset_t *set, int signo); // Aggiunge singolo
 int sigdelset(sigset_t *set, int signo); // Rimuove singolo
 int sigismember(const sigset_t *set, int signo); // Interpella
-int sigprocmask(int how, const sigset_t *restrict set,sigset_t *restrict oldset); // Update the current mask with the signals in ‘mod’
+// Update the current mask with the signals in ‘mod’
+int sigprocmask(int how, const sigset_t *restrict set,sigset_t *restrict oldset); 
 
 /* 
-A seconda del valore di how e di set, la maschera dei segnali del processo viene cambiata. Nello specifico:
+A seconda del valore di how e di set, la maschera dei segnali del processo viene cambiata.
+Nello specifico:
     - how = SIG_BLOCK: i segnali in set sono aggiunti alla maschera;
     - how = SIG_UNBLOCK: i segnali in set sono rimossi dalla maschera;
     - how = SIG_SETMASK: set diventa la maschera.
@@ -496,7 +519,9 @@ int sigpending(sigset_t *set); // Riempie il set con i segnali pending
 
 struct sigaction {
     void (*sa_handler)(int); // handler semplice
-    void (*sa_sigaction)(int, siginfo_t *, void *); // handler complesso con parametri aggiuntivi. Con info->si_pid si ottiene il pid del mandante
+    /* handler complesso con parametri aggiuntivi.
+    Con info->si_pid si ottiene il pid del mandante */
+    void (*sa_sigaction)(int, siginfo_t *, void *); 
     sigset_t sa_mask; //Signals blocked during handler
     int sa_flags; 
     /* modify behaviour of signal:
@@ -507,14 +532,17 @@ struct sigaction {
 };
 
 //Applica la sigaction
-int sigaction(int signum, const struct sigaction *restrict act, struct sigaction *restrict oldact);
+int sigaction(int signum, const struct sigaction *restrict act,
+              struct sigaction *restrict oldact);
 ```
 <br>
 
 ## Errors in C
 
 ```C
-export int errno; // dichiaro la variabile errno come esterna essa contiene l'ultimo codice di errore
+/* Dichiaro la variabile errno come esterna,
+essa contiene l'ultimo codice di errore */
+export int errno; 
 strerror(errno); // da un messaggio verboso sull'errore
 ```
 
@@ -526,22 +554,26 @@ strerror(errno); // da un messaggio verboso sull'errore
 int fd[2];
 pipe(fd); // ritorna 0 se tutto ok
 
-// lettura da pipe bloccante se non c'è niente a meno che la write sia stata chiusa, restituisce il numero di byte letti
+/* Lettura da pipe bloccante che restituisce il numero di byte letti,
+a meno che la write sia stata chiusa. */
 int read(int fd[0],char * data, int num);
 
 // scrittura su pipe
 int write(int fd[1],char * data, int num);
 
-// si chiude sempre la parte che non ci interessa per evitare che la read sia bloccante all'infinito.
+/* Si chiude sempre la parte che non ci interessa,
+per evitare che la read sia bloccante all'infinito. */
 ```
 <br>
 
 ### Pipe named
 
 ```C
-int mkfifo(const char *pathname, mode_t mode); // crea una pipe(file) con nome , ritorna -1 se da errore altrimenti 0
+// crea una pipe(file) con nome , ritorna -1 se da errore altrimenti 0
+int mkfifo(const char *pathname, mode_t mode); 
 
-// Per usare la coda entrambi i processi devono averla aperta contemporaneamente usando la open con il nome del file che è la pipe
+/* Per usare la coda entrambi i processi devono averla aperta
+contemporaneamente usando la open con il nome del file che è la pipe */
 ```
 <br>
 
@@ -550,28 +582,35 @@ int mkfifo(const char *pathname, mode_t mode); // crea una pipe(file) con nome ,
 ```C
 int creat(const char *pathname, mode_t mode); // to create the file for the ftok
 
-key_t ftok(const char *pathname, int proj_id); // to create the key to get and make the queue
+// to create the key to get and make the queue
+key_t ftok(const char *pathname, int proj_id); 
 
-int msgget(key_t key, int msgflg); 
 /*
 Crea o ottiene l'id della coda.
-msgflag: 0777 ( da mettere per ottenere tutti i permessi sulla coda ), IPC_CREAT (crea se non esiste), IPC_EXCL(fallisce se la coda esiste).
+msgflag: 0777 ( da mettere per ottenere tutti i permessi sulla coda ),
+IPC_CREAT (crea se non esiste),
+IPC_EXCL(fallisce se la coda esiste).
 Fallisce con -1.
 */
+int msgget(key_t key, int msgflg);
 
-
-// Per inviare messaggi posso definire una struttura ad hoc e usare mtype per definire il tipo di messaggio che andrà nella coda
+/* Per inviare messaggi posso definire una struttura ad hoc
+e usare mtype per definire il tipo di messaggio che andrà nella coda */
 struct msg_buffer{
     long mtype;
     char mtext[100];
 } message;
 
+// Flags: IPC_NOWAIT( la chiamata fallisce in assenza di spazio)
 int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
-// flag: IPC_NOWAIT( la chiamata fallisce in assenza di spazio)
 
-// Per ricevere messaggi 
+/* Per ricevere messaggi.
+Flags: 
+- IPC_NOWAIT ( fallisce se non ci sono messaggi ), 
+- MSG_NOERROR ( tronca il messaggio se è più grande del buffer,
+in assenza fallirebbe ) */
 ssize_t msgrcv(int msqid,void *msgp,size_t msgsz,long msgtyp,int msgflg)
-// flag: IPC_NOWAIT ( fallisce se non ci sono messaggi ), MSG_NOERROR ( tronca il messaggio se è più grande del buffer, in assenza fallirebbe )
+
 
 /*
 A seconda di msgtyp viene recuperato il messaggio:
@@ -583,7 +622,10 @@ A seconda di msgtyp viene recuperato il messaggio:
 
 int msgctl(int msqid, int cmd, struct msqid_ds *buf);
 /*
-Modifica la coda identificata da msqid secondo i comandi cmd, riempiendo buf con informazioni sulla coda (ad esempio tempo di ultima scrittura, di ultima lettura,numero messaggi nella coda, etc...). Valori di cmd possono essere:
+Modifica la coda identificata da msqid secondo i comandi cmd, 
+riempiendo buf con informazioni sulla coda (ad esempio:
+tempo di ultima scrittura, di ultima lettura,numero messaggi nella coda, etc...).
+Valori di cmd possono essere:
 - IPC_STAT: recupera informazioni da kernel
 - IPC_SET: imposta alcuni parametri a seconda di buf
 - IPC_RMID: rimuove immediatamente la coda
@@ -628,15 +670,20 @@ int pthread_create(
 
 int pthread_cancel(pthread_t thread); // Invia una richiesta di cancellazione
 
+/* Con state = PTHREAD_CANCEL_DISABLE o PTHREAD_CANCEL_ENABLE
+( abilita o disabilita la possibilità di essere cancellati) */
 int pthread_setcancelstate(int state, int *oldstate);
-// con state = PTHREAD_CANCEL_DISABLE o PTHREAD_CANCEL_ENABLE ( abilita o disabilita la possibilità di essere cancellati)
+
+/* Con type = PTHREAD_CANCEL_DEFERRED( attende un cancellation point )
+o PTHREAD_CANCEL_ASYNCHRONOUS ( cancellabile in qualsiasi momento ) */
 int pthread_setcanceltype(int type, int *oldtype);
-// con type = PTHREAD_CANCEL_DEFERRED( attende un cancellation point ) o PTHREAD_CANCEL_ASYNCHRONOUS ( cancellabile in qualsiasi momento )
 
 int pthread_join(pthread_t thread, void **retval); // attende un thread joinabile
 
-int pthread_attr_setxxxx(pthread_attr_t *attr, params); // setta un certo parametro del thread
-int pthread_attr_getxxxx(const pthread_attr_t *attr, params); // ottiene un certo parametro del thread
+// setta un certo parametro del thread
+int pthread_attr_setxxxx(pthread_attr_t *attr, params);
+// ottiene un certo parametro del thread
+int pthread_attr_getxxxx(const pthread_attr_t *attr, params);
 
 /*
 I più importanti sono er la set/get_detachstate per valutare se un thread è joinabile:
